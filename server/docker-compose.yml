@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine  # Usamos una versión ligera (alpine)
+    container_name: gr_financial_db
+    restart: always
+    environment:
+      POSTGRES_USER: gr_financial      # Tu usuario
+      POSTGRES_PASSWORD: gr_financial # Tu contraseña
+      POSTGRES_DB: gr_financial     # Nombre de la DB por defecto
+    ports:
+      - "5432:5432"  # Puerto PC : Puerto Contenedor
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data # ESTO ES VITAL: Guarda los datos en tu disco
