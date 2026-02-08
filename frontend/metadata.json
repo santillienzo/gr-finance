@@ -1,0 +1,5 @@
+{
+  "name": "Sistema GR - Control Financiero",
+  "description": "Aplicación de gestión financiera para pequeñas empresas. Control de cajas, proveedores, clientes y movimientos en ARS.",
+  "requestFramePermissions": []
+}
