@@ -9,14 +9,17 @@ config();
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
-  host: String(process.env.DB_HOST || 'localhost'),
-  port: parseInt(process.env.DB_PORT || '5432'),
-  username: String(process.env.DB_USERNAME || 'postgres'),
-  password: String(process.env.DB_PASSWORD || ''),
-  database: String(process.env.DB_NAME || 'gr_financial'),
+  url: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production'
+    ? { rejectUnauthorized: false }
+    : false,
   synchronize: process.env.NODE_ENV === 'development',
   logging: process.env.NODE_ENV === 'development',
-  entities: [User, Box, Entity, Transaction],
-  migrations: ['src/migrations/*.ts'],
+  entities: process.env.NODE_ENV === 'production'
+    ? ['dist/entities/*.js']
+    : [User, Box, Entity, Transaction],
+  migrations: process.env.NODE_ENV === 'production'
+    ? ['dist/migrations/*.js']
+    : ['src/migrations/*.ts'],
   subscribers: [],
 });
