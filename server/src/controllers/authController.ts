@@ -31,7 +31,7 @@ export const authController = {
     const token = jwt.sign(
       { userId: user.id, username: user.username },
       env.jwtSecret,
-      { expiresIn: env.jwtExpiresIn }
+      { expiresIn: (process.env.JWT_EXPIRES_IN || '24h') as `${number}h` }
     );
 
     res.json({
