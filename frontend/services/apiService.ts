@@ -25,13 +25,16 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response Interceptor: Handle Global Errors (Optional, e.g., 401 redirect)
+// Response Interceptor: Handle expired/invalid token
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Logic to redirect to login or clear storage could go here
-      // localStorage.removeItem('token'); 
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
+    if (error.response && error.response.status === 401 && !isLoginRequest) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.hash = '#/login';
+      window.location.reload();
     }
     return Promise.reject(error);
   }
