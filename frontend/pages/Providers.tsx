@@ -15,13 +15,17 @@ const Providers: React.FC = () => {
   const [payData, setPayData] = useState({ provId: '', boxId: '', amount: '', desc: '' });
   const [msg, setMsg] = useState('');
 
-  const handleAddProvider = (e: React.FormEvent) => {
+  const handleAddProvider = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProvName) return;
-    addEntity({ name: newProvName, type: 'PROVIDER' });
-    setNewProvName('');
-    setMsg('Proveedor agregado');
-    setTimeout(() => setMsg(''), 2000);
+    try {
+      await addEntity({ name: newProvName, type: 'PROVIDER' });
+      setNewProvName('');
+      setMsg('Proveedor agregado');
+      setTimeout(() => setMsg(''), 2000);
+    } catch (error) {
+      // Toast is shown by the axios interceptor
+    }
   };
 
   const handleDeleteProvider = (id: string, name: string) => {
@@ -30,21 +34,25 @@ const Providers: React.FC = () => {
     }
   };
 
-  const handlePurchase = (e: React.FormEvent) => {
+  const handlePurchase = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!purchaseData.provId || !purchaseData.amount) return;
-    addTransaction({
-      type: 'PURCHASE',
-      amount: parseFloat(purchaseData.amount),
-      description: purchaseData.desc || 'Compra registrada',
-      entityId: purchaseData.provId
-    });
-    setPurchaseData({ provId: '', amount: '', desc: '' });
-    setMsg('Compra registrada (Deuda generada)');
-    setTimeout(() => setMsg(''), 2000);
+    try {
+      await addTransaction({
+        type: 'PURCHASE',
+        amount: parseFloat(purchaseData.amount),
+        description: purchaseData.desc || 'Compra registrada',
+        entityId: purchaseData.provId
+      });
+      setPurchaseData({ provId: '', amount: '', desc: '' });
+      setMsg('Compra registrada (Deuda generada)');
+      setTimeout(() => setMsg(''), 2000);
+    } catch (error) {
+      // Toast is shown by the axios interceptor
+    }
   };
 
-  const handlePayment = (e: React.FormEvent) => {
+  const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!payData.provId || !payData.boxId || !payData.amount) return;
     
@@ -55,16 +63,20 @@ const Providers: React.FC = () => {
         return;
     }
 
-    addTransaction({
-      type: 'PAYMENT',
-      amount: parseFloat(payData.amount),
-      description: payData.desc || 'Pago a proveedor',
-      entityId: payData.provId,
-      boxId: payData.boxId
-    });
-    setPayData({ provId: '', boxId: '', amount: '', desc: '' });
-    setMsg('Pago registrado correctamente');
-    setTimeout(() => setMsg(''), 2000);
+    try {
+      await addTransaction({
+        type: 'PAYMENT',
+        amount: parseFloat(payData.amount),
+        description: payData.desc || 'Pago a proveedor',
+        entityId: payData.provId,
+        boxId: payData.boxId
+      });
+      setPayData({ provId: '', boxId: '', amount: '', desc: '' });
+      setMsg('Pago registrado correctamente');
+      setTimeout(() => setMsg(''), 2000);
+    } catch (error) {
+      // Toast is shown by the axios interceptor
+    }
   };
 
   return (

@@ -15,13 +15,17 @@ const Clients: React.FC = () => {
   const [collectData, setCollectData] = useState({ clientId: '', boxId: '', amount: '', desc: '' });
   const [msg, setMsg] = useState('');
 
-  const handleAddClient = (e: React.FormEvent) => {
+  const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClientName) return;
-    addEntity({ name: newClientName, type: 'CLIENT' });
-    setNewClientName('');
-    setMsg('Cliente agregado');
-    setTimeout(() => setMsg(''), 2000);
+    try {
+      await addEntity({ name: newClientName, type: 'CLIENT' });
+      setNewClientName('');
+      setMsg('Cliente agregado');
+      setTimeout(() => setMsg(''), 2000);
+    } catch (error) {
+      // Toast is shown by the axios interceptor
+    }
   };
 
   const handleDeleteClient = (id: string, name: string) => {
@@ -30,33 +34,41 @@ const Clients: React.FC = () => {
     }
   };
 
-  const handleSale = (e: React.FormEvent) => {
+  const handleSale = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!saleData.clientId || !saleData.amount) return;
-    addTransaction({
-      type: 'SALE',
-      amount: parseFloat(saleData.amount),
-      description: saleData.desc || 'Venta registrada',
-      entityId: saleData.clientId
-    });
-    setSaleData({ clientId: '', amount: '', desc: '' });
-    setMsg('Venta registrada correctamente');
-    setTimeout(() => setMsg(''), 2000);
+    try {
+      await addTransaction({
+        type: 'SALE',
+        amount: parseFloat(saleData.amount),
+        description: saleData.desc || 'Venta registrada',
+        entityId: saleData.clientId
+      });
+      setSaleData({ clientId: '', amount: '', desc: '' });
+      setMsg('Venta registrada correctamente');
+      setTimeout(() => setMsg(''), 2000);
+    } catch (error) {
+      // Toast is shown by the axios interceptor
+    }
   };
 
-  const handleCollection = (e: React.FormEvent) => {
+  const handleCollection = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!collectData.clientId || !collectData.boxId || !collectData.amount) return;
-    addTransaction({
-      type: 'COLLECTION',
-      amount: parseFloat(collectData.amount),
-      description: collectData.desc || 'Cobro registrado',
-      entityId: collectData.clientId,
-      boxId: collectData.boxId
-    });
-    setCollectData({ clientId: '', boxId: '', amount: '', desc: '' });
-    setMsg('Cobro registrado correctamente');
-    setTimeout(() => setMsg(''), 2000);
+    try {
+      await addTransaction({
+        type: 'COLLECTION',
+        amount: parseFloat(collectData.amount),
+        description: collectData.desc || 'Cobro registrado',
+        entityId: collectData.clientId,
+        boxId: collectData.boxId
+      });
+      setCollectData({ clientId: '', boxId: '', amount: '', desc: '' });
+      setMsg('Cobro registrado correctamente');
+      setTimeout(() => setMsg(''), 2000);
+    } catch (error) {
+      // Toast is shown by the axios interceptor
+    }
   };
 
   return (

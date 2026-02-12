@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Transaction, Entity, Box } from '../types';
+import { showToastFromOutside } from '../context/ToastContext';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
@@ -25,17 +26,28 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response Interceptor: Handle expired/invalid token
+// Response Interceptor: Handle errors globally
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     const isLoginRequest = error.config?.url?.includes('/auth/login');
-    if (error.response && error.response.status === 401 && !isLoginRequest) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.hash = '#/login';
-      window.location.reload();
+
+    if (error.response) {
+      const { status, data } = error.response;
+
+      if (status === 401 && !isLoginRequest) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.hash = '#/login';
+        window.location.reload();
+      } else if (!isLoginRequest) {
+        const message = data?.message || 'Ocurrió un error en el servidor';
+        showToastFromOutside(message, 'error');
+      }
+    } else if (error.request) {
+      showToastFromOutside('No se pudo conectar con el servidor', 'error');
     }
+
     return Promise.reject(error);
   }
 );

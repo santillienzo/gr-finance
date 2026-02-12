@@ -11,11 +11,11 @@ interface DataContextType {
   providers: Entity[];
   transactions: Transaction[];
   loading: boolean;
-  addTransaction: (t: Omit<Transaction, 'id' | 'date'>) => void;
-  addEntity: (e: Omit<Entity, 'id' | 'balance'>) => void;
-  deleteEntity: (id: string, type: 'CLIENT' | 'PROVIDER') => void;
-  updateInitialBalance: (entityId: string, amount: number) => void;
-  updateBoxInitialBalance: (boxId: string, amount: number) => void;
+  addTransaction: (t: Omit<Transaction, 'id' | 'date'>) => Promise<void>;
+  addEntity: (e: Omit<Entity, 'id' | 'balance'>) => Promise<void>;
+  deleteEntity: (id: string, type: 'CLIENT' | 'PROVIDER') => Promise<void>;
+  updateInitialBalance: (entityId: string, amount: number) => Promise<void>;
+  updateBoxInitialBalance: (boxId: string, amount: number) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -74,46 +74,32 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
   }, [user]);
 
   const addEntity = async (e: Omit<Entity, 'id' | 'balance'>) => {
-    // 1. Optimistic Update (Update UI immediately)
-    const tempId = generateId();
-    const newEntity: Entity = {
-      ...e,
-      id: tempId,
-      balance: 0
-    };
-
-    if (e.type === 'CLIENT') {
-      setClients(prev => [...prev, newEntity]);
-      try {
-        await apiService.createClient({ name: e.name });
-      } catch (error) {
-        console.error("API Error creating client", error);
+    try {
+      if (e.type === 'CLIENT') {
+        const created = await apiService.createClient({ name: e.name });
+        setClients(prev => [...prev, created]);
+      } else {
+        const created = await apiService.createProvider({ name: e.name });
+        setProviders(prev => [...prev, created]);
       }
-    } else {
-      setProviders(prev => [...prev, newEntity]);
-      try {
-        await apiService.createProvider({ name: e.name });
-      } catch (error) {
-        console.error("API Error creating provider", error);
-      }
+    } catch (error) {
+      console.error("API Error creating entity", error);
+      throw error;
     }
   };
 
   const deleteEntity = async (id: string, type: 'CLIENT' | 'PROVIDER') => {
-    if (type === 'CLIENT') {
-      setClients(prev => prev.filter(c => c.id !== id));
-      try {
+    try {
+      if (type === 'CLIENT') {
         await apiService.deactivateClient(id);
-      } catch (error) {
-        console.error("API Error deactivating client", error);
-      }
-    } else {
-      setProviders(prev => prev.filter(p => p.id !== id));
-      try {
+        setClients(prev => prev.filter(c => c.id !== id));
+      } else {
         await apiService.deactivateProvider(id);
-      } catch (error) {
-        console.error("API Error deactivating provider", error);
+        setProviders(prev => prev.filter(p => p.id !== id));
       }
+    } catch (error) {
+      console.error("API Error deactivating entity", error);
+      throw error;
     }
   };
 
@@ -121,106 +107,109 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     const isClient = clients.find(c => c.id === entityId);
     const target = isClient ? 'CLIENT' : 'PROVIDER';
 
-    const transaction: Transaction = {
-      id: generateId(),
-      date: new Date().toISOString(),
-      type: 'INITIAL_BALANCE',
-      amount: amount,
-      description: `Saldo inicial establecido: ${amount}`,
-      entityId: entityId
-    };
-
-    setTransactions(prev => [transaction, ...prev]);
-
-    if (target === 'CLIENT') {
-      setClients(prev => prev.map(c => c.id === entityId ? { ...c, balance: amount } : c));
-    } else {
-      setProviders(prev => prev.map(p => p.id === entityId ? { ...p, balance: amount } : p));
-    }
-
     try {
       await apiService.setInitialBalance({ entityId, type: target, amount });
+
+      const transaction: Transaction = {
+        id: generateId(),
+        date: new Date().toISOString(),
+        type: 'INITIAL_BALANCE',
+        amount: amount,
+        description: `Saldo inicial establecido: ${amount}`,
+        entityId: entityId
+      };
+
+      setTransactions(prev => [transaction, ...prev]);
+
+      if (target === 'CLIENT') {
+        setClients(prev => prev.map(c => c.id === entityId ? { ...c, balance: amount } : c));
+      } else {
+        setProviders(prev => prev.map(p => p.id === entityId ? { ...p, balance: amount } : p));
+      }
     } catch (error) {
       console.error("API Error setting initial balance", error);
+      throw error;
     }
   };
 
   const updateBoxInitialBalance = async (boxId: string, amount: number) => {
-      const transaction: Transaction = {
-          id: generateId(),
-          date: new Date().toISOString(),
-          type: 'INITIAL_BALANCE',
-          amount: amount,
-          description: `Ajuste manual de caja`,
-          boxId: boxId
-      };
-      setTransactions(prev => [transaction, ...prev]);
-      setBoxes(prev => prev.map(b => b.id === boxId ? { ...b, balance: amount } : b));
-
       try {
         await apiService.setInitialBalance({ entityId: boxId, type: 'BOX', amount });
+
+        const transaction: Transaction = {
+            id: generateId(),
+            date: new Date().toISOString(),
+            type: 'INITIAL_BALANCE',
+            amount: amount,
+            description: `Ajuste manual de caja`,
+            boxId: boxId
+        };
+        setTransactions(prev => [transaction, ...prev]);
+        setBoxes(prev => prev.map(b => b.id === boxId ? { ...b, balance: amount } : b));
       } catch (error) {
         console.error("API Error setting box balance", error);
+        throw error;
       }
   }
 
   const addTransaction = async (t: Omit<Transaction, 'id' | 'date'>) => {
-    const newTx: Transaction = {
-      ...t,
-      id: generateId(),
-      date: new Date().toISOString()
-    };
-
-    setTransactions(prev => [newTx, ...prev]);
-
-    switch (t.type) {
-      case 'SALE':
-        if (t.entityId) {
-          setClients(prev => prev.map(c => c.id === t.entityId ? { ...c, balance: c.balance + t.amount } : c));
-        }
-        break;
-      case 'COLLECTION':
-        if (t.entityId && t.boxId) {
-          setClients(prev => prev.map(c => c.id === t.entityId ? { ...c, balance: c.balance - t.amount } : c));
-          setBoxes(prev => prev.map(b => b.id === t.boxId ? { ...b, balance: b.balance + t.amount } : b));
-        }
-        break;
-      case 'PURCHASE':
-        if (t.entityId) {
-          setProviders(prev => prev.map(p => p.id === t.entityId ? { ...p, balance: p.balance + t.amount } : p));
-        }
-        break;
-      case 'PAYMENT':
-        if (t.entityId && t.boxId) {
-          setProviders(prev => prev.map(p => p.id === t.entityId ? { ...p, balance: p.balance - t.amount } : p));
-          setBoxes(prev => prev.map(b => b.id === t.boxId ? { ...b, balance: b.balance - t.amount } : b));
-        }
-        break;
-      case 'TRANSFER':
-        if (t.boxId && t.targetBoxId) {
-          setBoxes(prev => prev.map(b => {
-            if (b.id === t.boxId) return { ...b, balance: b.balance - t.amount };
-            if (b.id === t.targetBoxId) return { ...b, balance: b.balance + t.amount };
-            return b;
-          }));
-        }
-        break;
-      case 'INCOME':
-        if (t.boxId) {
-          setBoxes(prev => prev.map(b => b.id === t.boxId ? { ...b, balance: b.balance + t.amount } : b));
-        }
-        break;
-      case 'EXPENSE':
-        if (t.boxId) {
-          setBoxes(prev => prev.map(b => b.id === t.boxId ? { ...b, balance: b.balance - t.amount } : b));
-        }
-        break;
-    }
-
     try {
       await apiService.createTransaction(t);
+
+      const newTx: Transaction = {
+        ...t,
+        id: generateId(),
+        date: new Date().toISOString()
+      };
+
+      setTransactions(prev => [newTx, ...prev]);
+
+      switch (t.type) {
+        case 'SALE':
+          if (t.entityId) {
+            setClients(prev => prev.map(c => c.id === t.entityId ? { ...c, balance: c.balance + t.amount } : c));
+          }
+          break;
+        case 'COLLECTION':
+          if (t.entityId && t.boxId) {
+            setClients(prev => prev.map(c => c.id === t.entityId ? { ...c, balance: c.balance - t.amount } : c));
+            setBoxes(prev => prev.map(b => b.id === t.boxId ? { ...b, balance: b.balance + t.amount } : b));
+          }
+          break;
+        case 'PURCHASE':
+          if (t.entityId) {
+            setProviders(prev => prev.map(p => p.id === t.entityId ? { ...p, balance: p.balance + t.amount } : p));
+          }
+          break;
+        case 'PAYMENT':
+          if (t.entityId && t.boxId) {
+            setProviders(prev => prev.map(p => p.id === t.entityId ? { ...p, balance: p.balance - t.amount } : p));
+            setBoxes(prev => prev.map(b => b.id === t.boxId ? { ...b, balance: b.balance - t.amount } : b));
+          }
+          break;
+        case 'TRANSFER':
+          if (t.boxId && t.targetBoxId) {
+            setBoxes(prev => prev.map(b => {
+              if (b.id === t.boxId) return { ...b, balance: b.balance - t.amount };
+              if (b.id === t.targetBoxId) return { ...b, balance: b.balance + t.amount };
+              return b;
+            }));
+          }
+          break;
+        case 'INCOME':
+          if (t.boxId) {
+            setBoxes(prev => prev.map(b => b.id === t.boxId ? { ...b, balance: b.balance + t.amount } : b));
+          }
+          break;
+        case 'EXPENSE':
+          if (t.boxId) {
+            setBoxes(prev => prev.map(b => b.id === t.boxId ? { ...b, balance: b.balance - t.amount } : b));
+          }
+          break;
+      }
     } catch (error) {
       console.error("API Error creating transaction", error);
+      throw error;
     }
   };
 

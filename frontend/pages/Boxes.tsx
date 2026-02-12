@@ -13,7 +13,7 @@ const Boxes: React.FC = () => {
   });
   const [msg, setMsg] = useState('');
 
-  const handleTransfer = (e: React.FormEvent) => {
+  const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(transferData.amount);
     
@@ -32,17 +32,20 @@ const Boxes: React.FC = () => {
       return;
     }
 
-    addTransaction({
-      type: 'TRANSFER',
-      amount: amount,
-      description: transferData.description || 'Transferencia interna',
-      boxId: transferData.fromBox,
-      targetBoxId: transferData.toBox
-    });
-
-    setTransferData({ fromBox: '', toBox: '', amount: '', description: '' });
-    setMsg('Transferencia realizada con éxito');
-    setTimeout(() => setMsg(''), 3000);
+    try {
+      await addTransaction({
+        type: 'TRANSFER',
+        amount: amount,
+        description: transferData.description || 'Transferencia interna',
+        boxId: transferData.fromBox,
+        targetBoxId: transferData.toBox
+      });
+      setTransferData({ fromBox: '', toBox: '', amount: '', description: '' });
+      setMsg('Transferencia realizada con éxito');
+      setTimeout(() => setMsg(''), 3000);
+    } catch (error) {
+      // Toast is shown by the axios interceptor
+    }
   };
 
   return (

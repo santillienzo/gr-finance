@@ -13,7 +13,7 @@ const QuickActions: React.FC = () => {
   const [initEntity, setInitEntity] = useState({ id: '', type: 'BOX', amount: '' }); // type: BOX, CLIENT, PROVIDER
   const [initMsg, setInitMsg] = useState('');
 
-  const handleQuickAction = (e: React.FormEvent) => {
+  const handleQuickAction = async (e: React.FormEvent) => {
     e.preventDefault();
     if(!quickData.boxId || !quickData.amount) return;
 
@@ -26,30 +26,38 @@ const QuickActions: React.FC = () => {
         }
     }
 
-    addTransaction({
-      type: quickType,
-      amount: parseFloat(quickData.amount),
-      description: quickData.desc || (quickType === 'INCOME' ? 'Ingreso Rápido' : 'Salida Rápida'),
-      boxId: quickData.boxId
-    });
-    setQuickData({ boxId: '', amount: '', desc: '' });
-    setMsg('Movimiento registrado');
-    setTimeout(() => setMsg(''), 2000);
+    try {
+      await addTransaction({
+        type: quickType,
+        amount: parseFloat(quickData.amount),
+        description: quickData.desc || (quickType === 'INCOME' ? 'Ingreso Rápido' : 'Salida Rápida'),
+        boxId: quickData.boxId
+      });
+      setQuickData({ boxId: '', amount: '', desc: '' });
+      setMsg('Movimiento registrado');
+      setTimeout(() => setMsg(''), 2000);
+    } catch (error) {
+      // Toast is shown by the axios interceptor
+    }
   };
 
-  const handleInitialBalance = (e: React.FormEvent) => {
+  const handleInitialBalance = async (e: React.FormEvent) => {
       e.preventDefault();
       if(!initEntity.id || !initEntity.amount) return;
       
       const amount = parseFloat(initEntity.amount);
-      if(initEntity.type === 'BOX') {
-        updateBoxInitialBalance(initEntity.id, amount);
-      } else {
-        updateInitialBalance(initEntity.id, amount);
+      try {
+        if(initEntity.type === 'BOX') {
+          await updateBoxInitialBalance(initEntity.id, amount);
+        } else {
+          await updateInitialBalance(initEntity.id, amount);
+        }
+        setInitMsg('Saldo inicial actualizado');
+        setInitEntity({ id: '', type: 'BOX', amount: '' });
+        setTimeout(() => setInitMsg(''), 2000);
+      } catch (error) {
+        // Toast is shown by the axios interceptor
       }
-      setInitMsg('Saldo inicial actualizado');
-      setInitEntity({ id: '', type: 'BOX', amount: '' });
-      setTimeout(() => setInitMsg(''), 2000);
   }
 
   return (
