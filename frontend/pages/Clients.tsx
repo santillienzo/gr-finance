@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { formatCurrency } from '../utils';
-import { PlusCircle, DollarSign, UserPlus, Trash2 } from 'lucide-react';
+import { PlusCircle, DollarSign, UserPlus, Trash2, Eye } from 'lucide-react';
+import EntityTransactionsModal from '../components/EntityTransactionsModal';
 
 type Tab = 'LIST' | 'SALE' | 'COLLECTION';
 
@@ -14,6 +15,7 @@ const Clients: React.FC = () => {
   const [saleData, setSaleData] = useState({ clientId: '', amount: '', desc: '' });
   const [collectData, setCollectData] = useState({ clientId: '', boxId: '', amount: '', desc: '' });
   const [msg, setMsg] = useState('');
+  const [modalState, setModalState] = useState<{ isOpen: boolean; clientId: string; clientName: string }>({ isOpen: false, clientId: '', clientName: '' });
 
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,13 +142,22 @@ const Clients: React.FC = () => {
                         {formatCurrency(c.balance)}
                       </td>
                       <td className="p-4 text-right">
-                        <button 
-                          onClick={() => handleDeleteClient(c.id, c.name)}
-                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Eliminar cliente"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => setModalState({ isOpen: true, clientId: c.id, clientName: c.name })}
+                            className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Ver movimientos"
+                          >
+                            <Eye size={18} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteClient(c.id, c.name)}
+                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Eliminar cliente"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -247,6 +258,14 @@ const Clients: React.FC = () => {
           </form>
         </div>
       )}
+
+      <EntityTransactionsModal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState({ isOpen: false, clientId: '', clientName: '' })}
+        entityId={modalState.clientId}
+        entityName={modalState.clientName}
+        entityType="CLIENT"
+      />
     </div>
   );
 };

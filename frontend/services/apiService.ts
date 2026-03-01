@@ -110,14 +110,25 @@ export const apiService = {
   },
 
   // --- TRANSACTIONS ---
-  getTransactions: async (): Promise<Transaction[]> => {
-    const response = await apiClient.get('/transactions');
+  getTransactions: async (entityId?: string): Promise<Transaction[]> => {
+    const response = await apiClient.get('/transactions', {
+      params: entityId ? { entityId } : undefined
+    });
     return response.data;
   },
 
   createTransaction: async (data: Omit<Transaction, 'id' | 'date'>): Promise<Transaction> => {
     const response = await apiClient.post('/transactions', data);
     return response.data;
+  },
+
+  updateTransaction: async (id: string, data: Omit<Transaction, 'id' | 'date'>): Promise<Transaction> => {
+    const response = await apiClient.patch(`/transactions/${id}`, data);
+    return response.data;
+  },
+
+  deleteTransaction: async (id: string): Promise<void> => {
+    await apiClient.delete(`/transactions/${id}`);
   },
 
   // --- SETTINGS / INITIAL BALANCE ---

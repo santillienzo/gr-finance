@@ -38,7 +38,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="min-h-screen bg-slate-50 flex">
       {/* Sidebar for Desktop */}
       <div className="hidden md:flex flex-col w-64 bg-slate-900 text-white fixed h-full z-10 shadow-2xl border-r border-slate-800 transition-all duration-300">
-        <div className="p-6 flex items-center justify-center border-b border-slate-800/60">
+        <div className="p-6 flex items-center justify-center gap-3 border-b border-slate-800/60">
+          <img src="/assets/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
           <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent tracking-wider">
             {APP_NAME}
           </h1>
@@ -94,9 +95,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Mobile Header & Menu */}
       <div className="md:hidden fixed w-full bg-slate-900 text-white z-20 flex justify-between items-center p-4 border-b border-slate-800">
-        <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-          {APP_NAME}
-        </h1>
+        <div className="flex items-center gap-2">
+          <img src="/assets/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+            {APP_NAME}
+          </h1>
+        </div>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-slate-300 hover:text-white">
           {isMobileMenuOpen ? <X /> : <Menu />}
         </button>

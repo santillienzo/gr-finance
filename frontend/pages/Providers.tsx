@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { formatCurrency } from '../utils';
-import { FileText, CreditCard, Truck, Trash2 } from 'lucide-react';
+import { FileText, CreditCard, Truck, Trash2, Eye } from 'lucide-react';
+import EntityTransactionsModal from '../components/EntityTransactionsModal';
 
 type Tab = 'LIST' | 'PURCHASE' | 'PAYMENT';
 
@@ -14,6 +15,7 @@ const Providers: React.FC = () => {
   const [purchaseData, setPurchaseData] = useState({ provId: '', amount: '', desc: '' });
   const [payData, setPayData] = useState({ provId: '', boxId: '', amount: '', desc: '' });
   const [msg, setMsg] = useState('');
+  const [modalState, setModalState] = useState<{ isOpen: boolean; providerId: string; providerName: string }>({ isOpen: false, providerId: '', providerName: '' });
 
   const handleAddProvider = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,13 +150,22 @@ const Providers: React.FC = () => {
                         {formatCurrency(p.balance)}
                       </td>
                       <td className="p-4 text-right">
-                        <button 
-                          onClick={() => handleDeleteProvider(p.id, p.name)}
-                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Eliminar proveedor"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => setModalState({ isOpen: true, providerId: p.id, providerName: p.name })}
+                            className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Ver movimientos"
+                          >
+                            <Eye size={18} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteProvider(p.id, p.name)}
+                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Eliminar proveedor"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -255,6 +266,14 @@ const Providers: React.FC = () => {
           </form>
         </div>
       )}
+
+      <EntityTransactionsModal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState({ isOpen: false, providerId: '', providerName: '' })}
+        entityId={modalState.providerId}
+        entityName={modalState.providerName}
+        entityType="PROVIDER"
+      />
     </div>
   );
 };

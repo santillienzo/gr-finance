@@ -16,6 +16,9 @@ interface DataContextType {
   deleteEntity: (id: string, type: 'CLIENT' | 'PROVIDER') => Promise<void>;
   updateInitialBalance: (entityId: string, amount: number) => Promise<void>;
   updateBoxInitialBalance: (boxId: string, amount: number) => Promise<void>;
+  getEntityTransactions: (entityId: string) => Promise<Transaction[]>;
+  updateTransaction: (id: string, t: Omit<Transaction, 'id' | 'date'>) => Promise<void>;
+  deleteTransaction: (id: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -213,6 +216,60 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     }
   };
 
+  const getEntityTransactions = async (entityId: string): Promise<Transaction[]> => {
+    try {
+      const data = await apiService.getTransactions(entityId);
+      return data;
+    } catch (error) {
+      console.error('Error fetching entity transactions:', error);
+      throw error;
+    }
+  };
+
+  const updateTransaction = async (id: string, t: Omit<Transaction, 'id' | 'date'>) => {
+    try {
+      await apiService.updateTransaction(id, t);
+      
+      // Reload all data to ensure consistency after balance recalculations
+      const [fetchedBoxes, fetchedClients, fetchedProviders, fetchedTx] = await Promise.all([
+        apiService.getBoxes(),
+        apiService.getClients(),
+        apiService.getProviders(),
+        apiService.getTransactions(),
+      ]);
+
+      setBoxes(fetchedBoxes);
+      setClients(fetchedClients);
+      setProviders(fetchedProviders);
+      setTransactions(fetchedTx);
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      throw error;
+    }
+  };
+
+  const deleteTransaction = async (id: string) => {
+    try {
+      await apiService.deleteTransaction(id);
+      
+      // Reload all data to ensure consistency after balance recalculations
+      const [fetchedBoxes, fetchedClients, fetchedProviders, fetchedTx] = await Promise.all([
+        apiService.getBoxes(),
+        apiService.getClients(),
+        apiService.getProviders(),
+        apiService.getTransactions(),
+      ]);
+
+      setBoxes(fetchedBoxes);
+      setClients(fetchedClients);
+      setProviders(fetchedProviders);
+      setTransactions(fetchedTx);
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      throw error;
+    }
+  };
+
   const value = useMemo(() => ({
     boxes,
     clients,
@@ -223,7 +280,10 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     addEntity,
     deleteEntity,
     updateInitialBalance,
-    updateBoxInitialBalance
+    updateBoxInitialBalance,
+    getEntityTransactions,
+    updateTransaction,
+    deleteTransaction
   }), [boxes, clients, providers, transactions, loading]);
 
   return (
