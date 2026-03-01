@@ -31,7 +31,6 @@ AppDataSource.initialize()
     
     app.listen(env.port, () => {
       console.log(`Server running on port ${env.port}`);
-      console.log(`API available at http://localhost:${env.port}/api`);
     });
   })
   .catch((error) => {
